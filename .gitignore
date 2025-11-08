@@ -1,0 +1,40 @@
+cat > .gitignore <<'EOF'
+# Node / PNPM / Build
+node_modules/
+.pnpm-store/
+pnpm-lock.yaml
+dist/
+build/
+.cache/
+.tmp/
+.out/
+coverage/
+
+# React / Vite
+.vite/
+*.local
+*.log
+*.log.*
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS / VSCode
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Env / Secrets
+.env
+.env.*
+!.env.example
+
+# SQLite / data
+*.db
+*.db-journal
+data/
+backups/
+EOF
+
