@@ -77,7 +77,7 @@ function subtractDay(date: Date): Date {
   return copy;
 }
 
-function formatFinancialYearLabel(fiscalYearStart: number): string {
+export function formatFinancialYearLabel(fiscalYearStart: number): string {
   const endYear = fiscalYearStart + 1;
   const shorthand = endYear.toString().slice(-2);
   return `FY ${fiscalYearStart}-${shorthand}`;

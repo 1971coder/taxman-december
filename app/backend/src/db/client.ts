@@ -8,3 +8,5 @@ const databasePath = process.env.DATABASE_PATH ?? "./db/sqlite/app.db";
 const sqlite = new Database(databasePath);
 
 export const db = drizzle(sqlite, { schema });
+
+export type DatabaseClient = typeof db;

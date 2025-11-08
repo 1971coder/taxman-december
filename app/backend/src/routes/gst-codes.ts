@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { asc } from "drizzle-orm";
 import { Router } from "express";
 
 import { db } from "../db/client.js";
@@ -7,12 +8,12 @@ import { gstCodes } from "../db/schema.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { gstCodeSchema } from "../utils/zod-schemas.js";
 
-export const gstCodesRouter = Router();
+export const gstCodesRouter: Router = Router();
 
 gstCodesRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
-    const codes = await db.select().from(gstCodes).orderBy(gstCodes.code);
+    const codes = await db.select().from(gstCodes).orderBy(asc(gstCodes.code));
     res.json({ data: codes });
   })
 );
@@ -26,4 +27,3 @@ gstCodesRouter.post(
     res.status(201).json({ data: record });
   })
 );
-

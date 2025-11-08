@@ -91,14 +91,22 @@ export function GstCodesCard() {
               </tr>
             </thead>
             <tbody>
-              {listQuery.data?.data.map((code) => (
-                <tr key={code.id ?? code.code} className="border-b border-slate-100">
-                  <td className="px-4 py-2 font-medium">{code.code}</td>
-                  <td className="px-4 py-2 text-slate-500">{code.description}</td>
-                  <td className="px-4 py-2 text-right">{code.ratePercent}</td>
+              {listQuery.isLoading && (
+                <tr>
+                  <td className="px-4 py-4 text-center text-slate-500" colSpan={3}>
+                    Loading...
+                  </td>
                 </tr>
-              ))}
-              {listQuery.data?.data.length === 0 && (
+              )}
+              {!listQuery.isLoading &&
+                (listQuery.data?.data ?? []).map((code) => (
+                  <tr key={code.id ?? code.code} className="border-b border-slate-100">
+                    <td className="px-4 py-2 font-medium">{code.code}</td>
+                    <td className="px-4 py-2 text-slate-500">{code.description}</td>
+                    <td className="px-4 py-2 text-right">{code.ratePercent}</td>
+                  </tr>
+                ))}
+              {!listQuery.isLoading && (listQuery.data?.data?.length ?? 0) === 0 && (
                 <tr>
                   <td className="px-4 py-4 text-center text-slate-500" colSpan={3}>
                     No GST codes yet.
@@ -112,4 +120,3 @@ export function GstCodesCard() {
     </Card>
   );
 }
-

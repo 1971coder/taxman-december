@@ -8,7 +8,7 @@ import { settingsSchema } from "../utils/zod-schemas.js";
 
 const SETTINGS_ID = "company-settings";
 
-export const settingsRouter = Router();
+export const settingsRouter: Router = Router();
 
 settingsRouter.get(
   "/",

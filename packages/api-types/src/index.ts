@@ -25,7 +25,7 @@ export type SettingsInput = z.infer<typeof settingsSchema>;
 export const clientSchema = z.object({
   id: z.string().uuid().optional(),
   displayName: z.string().min(1),
-  contactEmail: z.string().email(),
+  contactEmail: z.string().email().optional(),
   defaultRateCents: z.number().int().nonnegative().optional(),
   isActive: z.boolean().default(true)
 });
@@ -76,7 +76,65 @@ export type InvoiceInput = z.infer<typeof invoiceSchema>;
 
 export const basRequestSchema = z.object({
   frequency: basFrequencySchema,
+  basis: gstBasisSchema,
   fiscalYearStart: z.number().int(),
   fyStartMonth: z.number().int().min(1).max(12).default(7)
 });
 export type BasRequestInput = z.infer<typeof basRequestSchema>;
+
+export const basPeriodSchema = z.object({
+  label: z.string(),
+  index: z.number().int().min(1),
+  start: z.string(),
+  end: z.string()
+});
+export type BasPeriod = z.infer<typeof basPeriodSchema>;
+
+export const basSummarySchema = z.object({
+  basis: gstBasisSchema,
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  salesExCents: z.number().int(),
+  salesGstCents: z.number().int(),
+  purchasesExCents: z.number().int(),
+  purchasesGstCents: z.number().int(),
+  netGstCents: z.number().int()
+});
+export type BasSummary = z.infer<typeof basSummarySchema>;
+
+export const basExceptionSchema = z.object({
+  id: z.string().uuid().optional(),
+  sourceType: z.string(),
+  sourceId: z.string(),
+  kind: z.string(),
+  message: z.string(),
+  resolvedAt: z.string().nullable().optional()
+});
+export type BasException = z.infer<typeof basExceptionSchema>;
+
+export const basPeriodSummarySchema = z.object({
+  period: basPeriodSchema,
+  summary: basSummarySchema
+});
+export type BasPeriodSummary = z.infer<typeof basPeriodSummarySchema>;
+
+export const basReportResponseSchema = z.object({
+  request: basRequestSchema,
+  fiscalYearLabel: z.string(),
+  periods: z.array(basPeriodSummarySchema),
+  exceptions: z.array(basExceptionSchema).default([])
+});
+export type BasReportResponse = z.infer<typeof basReportResponseSchema>;
+
+export const expenseSchema = z.object({
+  id: z.string().uuid().optional(),
+  supplierName: z.string().min(1),
+  category: z.string().min(1),
+  amountExCents: z.number().int().nonnegative(),
+  gstCents: z.number().int().nonnegative(),
+  gstCodeId: z.string().uuid().optional(),
+  incurredDate: z.coerce.date(),
+  attachmentPath: z.string().optional(),
+  notes: z.string().optional()
+});
+export type ExpenseInput = z.infer<typeof expenseSchema>;
