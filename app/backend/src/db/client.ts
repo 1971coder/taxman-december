@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 
 import * as schema from "./schema.js";
 
-const databasePath = process.env.DATABASE_PATH ?? "./db/sqlite/app.db";
+export const databasePath = process.env.DATABASE_PATH ?? "./db/sqlite/app.db";
 
 const sqlite = new Database(databasePath);
 

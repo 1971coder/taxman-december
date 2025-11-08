@@ -12,6 +12,7 @@ import { expensesRouter } from "./routes/expenses.js";
 import { reportsRouter } from "./routes/reports.js";
 import { gstCodesRouter } from "./routes/gst-codes.js";
 import { settingsRouter } from "./routes/settings.js";
+import { dataRouter } from "./routes/data-io.js";
 
 const app: Express = express();
 
@@ -31,6 +32,7 @@ app.use("/api/employees", employeesRouter);
 app.use("/api/invoices", invoicesRouter);
 app.use("/api/expenses", expensesRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/data", dataRouter);
 
 app.use((req, _res, next) => {
   next(createHttpError(404, `Route ${req.method} ${req.path} not found`));

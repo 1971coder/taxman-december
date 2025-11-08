@@ -1,0 +1,106 @@
+import Database from "better-sqlite3";
+import { mkdtemp } from "node:fs/promises";
+import path from "node:path";
+import { tmpdir } from "node:os";
+import type { Express } from "express";
+import { vi } from "vitest";
+
+const CREATE_TABLES_SQL = `
+CREATE TABLE IF NOT EXISTS company_settings (
+  id TEXT PRIMARY KEY,
+  legal_name TEXT NOT NULL,
+  abn TEXT NOT NULL,
+  gst_basis TEXT NOT NULL,
+  bas_frequency TEXT NOT NULL,
+  fy_start_month INTEGER NOT NULL DEFAULT 7,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+
+CREATE TABLE IF NOT EXISTS clients (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  contact_email TEXT,
+  default_rate_cents INTEGER,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+  id TEXT PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  email TEXT,
+  base_rate_cents INTEGER NOT NULL DEFAULT 0,
+  default_unit TEXT NOT NULL DEFAULT 'hour',
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+
+CREATE TABLE IF NOT EXISTS invoices (
+  id TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  issue_date TEXT NOT NULL,
+  due_date TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  reference TEXT,
+  total_ex_cents INTEGER NOT NULL DEFAULT 0,
+  total_gst_cents INTEGER NOT NULL DEFAULT 0,
+  total_inc_cents INTEGER NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+  id TEXT PRIMARY KEY,
+  supplier_name TEXT NOT NULL,
+  category TEXT,
+  amount_ex_cents INTEGER NOT NULL DEFAULT 0,
+  gst_cents INTEGER NOT NULL DEFAULT 0,
+  gst_code_id TEXT,
+  incurred_date TEXT NOT NULL,
+  attachment_path TEXT,
+  notes TEXT
+);
+`;
+
+export interface TestContext {
+  app: Express;
+  dbPath: string;
+}
+
+export async function setupTestApp(): Promise<TestContext> {
+  const dir = await mkdtemp(path.join(tmpdir(), "taxman-test-"));
+  const dbPath = path.join(dir, "app.db");
+  initializeDatabase(dbPath);
+  process.env.NODE_ENV = "test";
+  process.env.DATABASE_PATH = dbPath;
+  vi.resetModules();
+  const { default: app } = await import("../index.js");
+  return { app, dbPath };
+}
+
+export function resetDatabase(dbPath: string) {
+  withDatabase(dbPath, (sqlite) => {
+    sqlite.exec(`
+      DELETE FROM invoices;
+      DELETE FROM expenses;
+      DELETE FROM clients;
+      DELETE FROM employees;
+      DELETE FROM company_settings;
+    `);
+  });
+}
+
+export function withDatabase<T>(dbPath: string, fn: (db: Database) => T): T {
+  const sqlite = new Database(dbPath);
+  try {
+    return fn(sqlite);
+  } finally {
+    sqlite.close();
+  }
+}
+
+function initializeDatabase(dbPath: string) {
+  withDatabase(dbPath, (sqlite) => {
+    sqlite.exec(CREATE_TABLES_SQL);
+  });
+}

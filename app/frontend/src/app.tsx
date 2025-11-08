@@ -7,6 +7,7 @@ import ExpensesPage from "./pages/expenses";
 import InvoicesPage from "./pages/invoices";
 import ReportsPage from "./pages/reports";
 import SettingsPage from "./pages/settings";
+import DataIoPage from "./pages/data-io";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
@@ -15,6 +16,7 @@ const navItems = [
   { to: "/invoices", label: "Invoices" },
   { to: "/expenses", label: "Expenses" },
   { to: "/reports", label: "Reports" },
+  { to: "/data", label: "Data I/O" },
   { to: "/settings", label: "Settings" }
 ];
 
@@ -53,6 +55,7 @@ function App() {
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/data" element={<DataIoPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
