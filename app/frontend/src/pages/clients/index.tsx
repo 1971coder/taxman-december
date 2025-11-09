@@ -13,7 +13,10 @@ import { Card, CardDescription, CardHeader, CardTitle } from "../../components/u
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 
-type ClientFormValues = Pick<ClientInput, "displayName" | "contactEmail" | "defaultRateCents">;
+type ClientFormValues = Pick<
+  ClientInput,
+  "displayName" | "contactEmail" | "defaultRateCents" | "paymentTermsDays"
+>;
 
 const CLIENTS_QUERY_KEY = ["clients"];
 
@@ -21,12 +24,18 @@ export default function ClientsPage() {
   const queryClient = useQueryClient();
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(
-      clientSchema.pick({ displayName: true, contactEmail: true, defaultRateCents: true })
+      clientSchema.pick({
+        displayName: true,
+        contactEmail: true,
+        defaultRateCents: true,
+        paymentTermsDays: true
+      })
     ),
     defaultValues: {
       displayName: "",
       contactEmail: "",
-      defaultRateCents: 0
+      defaultRateCents: 0,
+      paymentTermsDays: 0
     }
   });
 
@@ -52,7 +61,12 @@ export default function ClientsPage() {
         return { data: [...current.data, response.data] };
       });
       toast.success("Client saved");
-      form.reset({ displayName: "", contactEmail: "", defaultRateCents: 0 });
+      form.reset({
+        displayName: "",
+        contactEmail: "",
+        defaultRateCents: 0,
+        paymentTermsDays: 0
+      });
     },
     onError: () => toast.error("Unable to save client")
   });
@@ -75,13 +89,14 @@ export default function ClientsPage() {
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2 text-right">Default Rate</th>
+                <th className="px-4 py-2 text-right">Terms (days)</th>
                 <th className="px-4 py-2 text-right">Rates</th>
               </tr>
             </thead>
             <tbody>
               {clientsQuery.isLoading && (
                 <tr>
-                  <td className="px-4 py-4 text-center text-slate-500" colSpan={3}>
+                  <td className="px-4 py-4 text-center text-slate-500" colSpan={5}>
                     Loading...
                   </td>
                 </tr>
@@ -98,6 +113,7 @@ export default function ClientsPage() {
                   <td className="px-4 py-2 text-right">
                     {client.defaultRateCents ? `$${(client.defaultRateCents / 100).toFixed(2)}` : "—"}
                   </td>
+                  <td className="px-4 py-2 text-right">{client.paymentTermsDays ?? 0}</td>
                   <td className="px-4 py-2 text-right">
                     <button
                       type="button"
@@ -111,7 +127,7 @@ export default function ClientsPage() {
               ))}
               {!clientsQuery.isLoading && (clientsQuery.data?.data?.length ?? 0) === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-4 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-4 text-center text-slate-500">
                     No clients yet.
                   </td>
                 </tr>
@@ -142,6 +158,15 @@ export default function ClientsPage() {
               type="number"
               {...form.register("defaultRateCents", { valueAsNumber: true })}
               min={0}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paymentTermsDays">Payment terms (days)</Label>
+            <Input
+              id="paymentTermsDays"
+              type="number"
+              min={0}
+              {...form.register("paymentTermsDays", { valueAsNumber: true })}
             />
           </div>
           <Button type="submit" className="md:col-span-3" disabled={mutation.isPending}>

@@ -27,6 +27,7 @@ export const clientSchema = z.object({
   displayName: z.string().min(1),
   contactEmail: z.string().email().optional(),
   defaultRateCents: z.number().int().nonnegative().optional(),
+  paymentTermsDays: z.number().int().nonnegative().default(0),
   isActive: z.boolean().default(true)
 });
 export type ClientInput = z.infer<typeof clientSchema>;

@@ -56,7 +56,18 @@ invoicesRouter.post(
     }
 
     const issueDate = payload.issueDate;
-    const dueDate = payload.dueDate ?? payload.issueDate;
+    let dueDate = payload.dueDate;
+
+    if (!dueDate) {
+      const [clientRecord] = await db
+        .select({ paymentTermsDays: clients.paymentTermsDays })
+        .from(clients)
+        .where(eq(clients.id, payload.clientId))
+        .limit(1);
+
+      const paymentTermsDays = clientRecord?.paymentTermsDays ?? 0;
+      dueDate = addDays(issueDate, paymentTermsDays);
+    }
     const cashReceivedDate = payload.cashReceivedDate;
     const isoCashReceivedDate = cashReceivedDate ? cashReceivedDate.toISOString().slice(0, 10) : null;
 
@@ -176,4 +187,10 @@ async function determineLineRate({
   }
 
   return resolveRate({ clientId, employeeId, issueDate });
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
 }

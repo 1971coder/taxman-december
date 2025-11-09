@@ -9,8 +9,20 @@ describe("ClientsPage", () => {
     const fetchMock = setupFetchMock({
       "/api/clients": {
         GET: { body: { data: [
-          { id: "client-1", displayName: "Acme Pty", contactEmail: "acme@example.com", defaultRateCents: 12000 },
-          { id: "client-2", displayName: "Beta Pty", contactEmail: "beta@example.com", defaultRateCents: null }
+          {
+            id: "client-1",
+            displayName: "Acme Pty",
+            contactEmail: "acme@example.com",
+            defaultRateCents: 12000,
+            paymentTermsDays: 14
+          },
+          {
+            id: "client-2",
+            displayName: "Beta Pty",
+            contactEmail: "beta@example.com",
+            defaultRateCents: null,
+            paymentTermsDays: 0
+          }
         ] } },
         POST: ({ body }) => ({ body: { data: { id: "client-new", ...body } } })
       },
@@ -41,6 +53,8 @@ describe("ClientsPage", () => {
     await userEvent.type(screen.getByLabelText(/display name/i), "Gamma Co");
     await userEvent.type(screen.getByLabelText(/contact email/i), "gamma@example.com");
     await userEvent.type(screen.getByLabelText(/default rate \(cents\)/i), "12500");
+    await userEvent.clear(screen.getByLabelText(/payment terms/i));
+    await userEvent.type(screen.getByLabelText(/payment terms/i), "21");
     await userEvent.click(screen.getByRole("button", { name: /save client/i }));
 
     await waitFor(() => {
@@ -50,6 +64,7 @@ describe("ClientsPage", () => {
       expect(postCall).toBeTruthy();
       const [, init] = postCall!;
       expect(init?.body).toContain("Gamma Co");
+      expect(init?.body).toContain("21");
     });
   });
 });

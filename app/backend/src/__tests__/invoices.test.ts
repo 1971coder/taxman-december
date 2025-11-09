@@ -68,6 +68,37 @@ describe("POST /api/invoices", () => {
       { invoiceNumber: 2, cashReceivedDate: "2024-07-25" }
     ]);
   });
+
+  it("defaults the due date using client payment terms", async () => {
+    const response = await request(app)
+      .post("/api/invoices")
+      .send({
+        clientId: CLIENT_ID,
+        issueDate: "2024-08-01",
+        lines: [
+          {
+            employeeId: EMPLOYEE_ID,
+            description: "Consulting",
+            quantity: 1,
+            unit: "hour",
+            rate: 0,
+            gstCodeId: GST_CODE_ID,
+            overrideRate: false
+          }
+        ]
+      })
+      .expect(201);
+
+    expect(response.body.data.dueDate).toBe("2024-08-15");
+
+    const storedInvoice = withDatabase(dbPath, (sqlite) =>
+      sqlite
+        .prepare("SELECT due_date AS dueDate FROM invoices WHERE id = @id")
+        .get({ id: response.body.data.id })
+    );
+
+    expect(storedInvoice?.dueDate).toBe("2024-08-15");
+  });
 });
 
 function seedClient() {
@@ -75,8 +106,8 @@ function seedClient() {
     sqlite
       .prepare(
         `
-        INSERT INTO clients (id, display_name, contact_email, default_rate_cents, is_active)
-        VALUES (@id, 'Client A', 'client@example.com', 0, 1)
+        INSERT INTO clients (id, display_name, contact_email, default_rate_cents, payment_terms_days, is_active)
+        VALUES (@id, 'Client A', 'client@example.com', 0, 14, 1)
       `
       )
       .run({ id: CLIENT_ID });
