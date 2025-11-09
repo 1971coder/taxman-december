@@ -5,9 +5,11 @@ import { apiFetch } from "../../lib/api";
 
 interface InvoiceSummary {
   id: string;
+  invoiceNumber: number;
   clientId: string;
   issueDate: string;
   dueDate?: string;
+  cashReceivedDate?: string | null;
   clientName?: string | null;
   status: string;
   totalIncCents: number;
@@ -31,7 +33,9 @@ export default function InvoicesPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
+                <th className="px-4 py-2">Invoice #</th>
                 <th className="px-4 py-2">Issue Date</th>
+                <th className="px-4 py-2">Cash Received</th>
                 <th className="px-4 py-2">Client</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2 text-right">Total inc GST</th>
@@ -40,14 +44,18 @@ export default function InvoicesPage() {
             <tbody>
               {invoicesQuery.isLoading && (
                 <tr>
-                  <td className="px-4 py-4 text-center text-slate-500" colSpan={4}>
+                  <td className="px-4 py-4 text-center text-slate-500" colSpan={6}>
                     Loading...
                   </td>
                 </tr>
               )}
               {!invoicesQuery.isLoading && (invoicesQuery.data?.data ?? []).map((invoice) => (
                 <tr key={invoice.id} className="border-b border-slate-100">
+                  <td className="px-4 py-2 font-mono text-xs">{invoice.invoiceNumber}</td>
                   <td className="px-4 py-2 font-medium">{invoice.issueDate}</td>
+                  <td className="px-4 py-2 text-slate-600">
+                    {invoice.cashReceivedDate ?? "—"}
+                  </td>
                   <td className="px-4 py-2 text-slate-600">{invoice.clientName ?? invoice.clientId}</td>
                   <td className="px-4 py-2 capitalize">{invoice.status}</td>
                   <td className="px-4 py-2 text-right">
@@ -57,7 +65,7 @@ export default function InvoicesPage() {
               ))}
               {!invoicesQuery.isLoading && (invoicesQuery.data?.data?.length ?? 0) === 0 && (
                 <tr>
-                  <td className="px-4 py-4 text-center text-slate-500" colSpan={4}>
+                  <td className="px-4 py-4 text-center text-slate-500" colSpan={6}>
                     No invoices yet.
                   </td>
                 </tr>

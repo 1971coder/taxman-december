@@ -16,6 +16,14 @@ CREATE TABLE IF NOT EXISTS company_settings (
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 
+CREATE TABLE IF NOT EXISTS gst_codes (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  description TEXT,
+  rate_percent REAL NOT NULL DEFAULT 10,
+  is_active INTEGER NOT NULL DEFAULT 1
+);
+
 CREATE TABLE IF NOT EXISTS clients (
   id TEXT PRIMARY KEY,
   display_name TEXT NOT NULL,
@@ -35,11 +43,23 @@ CREATE TABLE IF NOT EXISTS employees (
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 
+CREATE TABLE IF NOT EXISTS client_rates (
+  id TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  employee_id TEXT NOT NULL,
+  rate_cents INTEGER NOT NULL,
+  unit TEXT NOT NULL DEFAULT 'hour',
+  effective_from TEXT NOT NULL,
+  effective_to TEXT
+);
+
 CREATE TABLE IF NOT EXISTS invoices (
   id TEXT PRIMARY KEY,
+  invoice_number INTEGER NOT NULL UNIQUE,
   client_id TEXT NOT NULL,
   issue_date TEXT NOT NULL,
   due_date TEXT NOT NULL,
+  cash_received_date TEXT,
   status TEXT NOT NULL DEFAULT 'draft',
   reference TEXT,
   total_ex_cents INTEGER NOT NULL DEFAULT 0,
@@ -47,6 +67,19 @@ CREATE TABLE IF NOT EXISTS invoices (
   total_inc_cents INTEGER NOT NULL DEFAULT 0,
   notes TEXT,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+
+CREATE TABLE IF NOT EXISTS invoice_items (
+  id TEXT PRIMARY KEY,
+  invoice_id TEXT NOT NULL,
+  employee_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  quantity REAL NOT NULL DEFAULT 0,
+  unit TEXT NOT NULL DEFAULT 'hour',
+  rate_cents INTEGER NOT NULL DEFAULT 0,
+  amount_ex_cents INTEGER NOT NULL DEFAULT 0,
+  gst_code_id TEXT NOT NULL,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id)
 );
 
 CREATE TABLE IF NOT EXISTS expenses (
@@ -81,10 +114,13 @@ export async function setupTestApp(): Promise<TestContext> {
 export function resetDatabase(dbPath: string) {
   withDatabase(dbPath, (sqlite) => {
     sqlite.exec(`
+      DELETE FROM invoice_items;
       DELETE FROM invoices;
       DELETE FROM expenses;
+      DELETE FROM client_rates;
       DELETE FROM clients;
       DELETE FROM employees;
+      DELETE FROM gst_codes;
       DELETE FROM company_settings;
     `);
   });

@@ -39,6 +39,9 @@ app.use((req, _res, next) => {
 });
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (!createHttpError.isHttpError(err)) {
+    console.error(err);
+  }
   const error = createHttpError.isHttpError(err)
     ? err
     : createHttpError(500, "Internal Server Error");

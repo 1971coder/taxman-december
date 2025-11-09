@@ -7,6 +7,7 @@ import { resetDatabase, setupTestApp, withDatabase } from "./test-utils.js";
 
 let app: Express;
 let dbPath: string;
+let invoiceSequence = 1;
 
 describe("GET /api/reports/bas", () => {
   beforeAll(async () => {
@@ -21,6 +22,7 @@ describe("GET /api/reports/bas", () => {
 
   beforeEach(() => {
     resetDatabase(dbPath);
+    invoiceSequence = 1;
   });
 
   it("computes BAS summaries using company defaults", async () => {
@@ -32,7 +34,9 @@ describe("GET /api/reports/bas", () => {
       issueDate: "2024-07-10",
       totalExCents: 120_000,
       totalGstCents: 12_000,
-      totalIncCents: 132_000
+      totalIncCents: 132_000,
+      cashReceivedDate: "2024-07-15",
+      invoiceNumber: 1
     });
     seedExpense({
       id: "exp-1",
@@ -69,7 +73,9 @@ describe("GET /api/reports/bas", () => {
       issueDate: "2025-07-04",
       totalExCents: 75_000,
       totalGstCents: 7_500,
-      totalIncCents: 82_500
+      totalIncCents: 82_500,
+      cashReceivedDate: "2025-07-06",
+      invoiceNumber: 99
     });
 
     const response = await request(app)
@@ -90,6 +96,50 @@ describe("GET /api/reports/bas", () => {
     expect(data.periods).toHaveLength(12);
     expect(data.periods[0].period.label).toBe("Jul FY 2025-26");
     expect(data.periods[0].summary.salesExCents).toBe(75_000);
+  });
+
+  it("only includes invoices with cash received dates inside the period for cash basis", async () => {
+    seedCompanySettings({ gstBasis: "cash", basFrequency: "quarterly" });
+    const clientId = seedClient({ id: "client-cash", displayName: "Cash Client" });
+
+    seedInvoice({
+      id: "inv-cash-1",
+      clientId,
+      issueDate: "2024-07-05",
+      totalExCents: 40_000,
+      totalGstCents: 4_000,
+      totalIncCents: 44_000,
+      invoiceNumber: 101
+    });
+
+    seedInvoice({
+      id: "inv-cash-2",
+      clientId,
+      issueDate: "2024-07-15",
+      totalExCents: 60_000,
+      totalGstCents: 6_000,
+      totalIncCents: 66_000,
+      cashReceivedDate: "2024-10-01", // outside Q1
+      invoiceNumber: 102
+    });
+
+    seedInvoice({
+      id: "inv-cash-3",
+      clientId,
+      issueDate: "2024-08-01",
+      totalExCents: 80_000,
+      totalGstCents: 8_000,
+      totalIncCents: 88_000,
+      cashReceivedDate: "2024-08-15",
+      invoiceNumber: 103
+    });
+
+    const response = await request(app).get("/api/reports/bas").expect(200);
+    const { data } = response.body;
+    const firstPeriod = data.periods[0];
+
+    expect(firstPeriod.summary.salesExCents).toBe(80_000);
+    expect(firstPeriod.summary.salesGstCents).toBe(8_000);
   });
 });
 
@@ -139,7 +189,9 @@ function seedInvoice({
   issueDate,
   totalExCents,
   totalGstCents,
-  totalIncCents
+  totalIncCents,
+  cashReceivedDate,
+  invoiceNumber
 }: {
   id: string;
   clientId: string;
@@ -147,20 +199,24 @@ function seedInvoice({
   totalExCents: number;
   totalGstCents: number;
   totalIncCents: number;
+  cashReceivedDate?: string | null;
+  invoiceNumber?: number;
 }) {
   withDatabase(dbPath, (sqlite) => {
     sqlite
       .prepare(
         `
-        INSERT INTO invoices (id, client_id, issue_date, due_date, status, total_ex_cents, total_gst_cents, total_inc_cents)
-        VALUES (@id, @clientId, @issueDate, @dueDate, @status, @totalExCents, @totalGstCents, @totalIncCents)
+        INSERT INTO invoices (id, invoice_number, client_id, issue_date, due_date, cash_received_date, status, total_ex_cents, total_gst_cents, total_inc_cents)
+        VALUES (@id, @invoiceNumber, @clientId, @issueDate, @dueDate, @cashReceivedDate, @status, @totalExCents, @totalGstCents, @totalIncCents)
       `
       )
       .run({
         id,
+        invoiceNumber: invoiceNumber ?? invoiceSequence++,
         clientId,
         issueDate,
         dueDate: issueDate,
+        cashReceivedDate: cashReceivedDate ?? null,
         status: "submitted",
         totalExCents,
         totalGstCents,

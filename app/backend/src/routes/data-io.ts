@@ -156,9 +156,11 @@ const exportConfig: Record<
   invoices: {
     headers: [
       "id",
+      "invoiceNumber",
       "clientId",
       "issueDate",
       "dueDate",
+      "cashReceivedDate",
       "status",
       "reference",
       "totalExCents",
@@ -170,9 +172,11 @@ const exportConfig: Record<
       db
         .select({
           id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
           clientId: invoices.clientId,
           issueDate: invoices.issueDate,
           dueDate: invoices.dueDate,
+          cashReceivedDate: invoices.cashReceivedDate,
           status: invoices.status,
           reference: invoices.reference,
           totalExCents: invoices.totalExCents,

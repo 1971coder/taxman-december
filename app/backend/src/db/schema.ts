@@ -68,11 +68,13 @@ export const clientRates = sqliteTable("client_rates", {
 
 export const invoices = sqliteTable("invoices", {
   id: text("id").primaryKey(),
+  invoiceNumber: integer("invoice_number").notNull().unique(),
   clientId: text("client_id")
     .notNull()
     .references(() => clients.id),
   issueDate: text("issue_date").notNull(),
   dueDate: text("due_date").notNull(),
+  cashReceivedDate: text("cash_received_date"),
   status: text("status").notNull().default("draft"),
   reference: text("reference"),
   totalExCents: integer("total_ex_cents").notNull().default(0),

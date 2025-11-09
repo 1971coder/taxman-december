@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { Router } from "express";
 import createHttpError from "http-errors";
 
@@ -20,10 +20,12 @@ invoicesRouter.get(
     const data = await db
       .select({
         id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
         clientId: invoices.clientId,
         clientName: clients.displayName,
         issueDate: invoices.issueDate,
         status: invoices.status,
+        cashReceivedDate: invoices.cashReceivedDate,
         totalIncCents: invoices.totalIncCents
       })
       .from(invoices)
@@ -55,6 +57,8 @@ invoicesRouter.post(
 
     const issueDate = payload.issueDate;
     const dueDate = payload.dueDate ?? payload.issueDate;
+    const cashReceivedDate = payload.cashReceivedDate;
+    const isoCashReceivedDate = cashReceivedDate ? cashReceivedDate.toISOString().slice(0, 10) : null;
 
     const gstCodeIds = Array.from(new Set(payload.lines.map((line) => line.gstCodeId)));
 
@@ -80,6 +84,11 @@ invoicesRouter.post(
       let totalGstCents = 0;
 
       const lineRecords = [] as (typeof invoiceItems.$inferInsert)[];
+
+      const [maxNumberRow] = await tx
+        .select({ maxNumber: sql<number>`COALESCE(MAX(${invoices.invoiceNumber}), 0)` })
+        .from(invoices);
+      const invoiceNumber = Number(maxNumberRow?.maxNumber ?? 0) + 1;
 
       for (const [index, line] of payload.lines.entries()) {
         const rateCents = await determineLineRate({
@@ -116,9 +125,11 @@ invoicesRouter.post(
 
       await tx.insert(invoices).values({
         id: invoiceId,
+        invoiceNumber,
         clientId: payload.clientId,
         issueDate: isoIssueDate,
         dueDate: isoDueDate,
+        cashReceivedDate: isoCashReceivedDate,
         reference: payload.reference,
         notes: payload.notes,
         status: "draft",
@@ -131,9 +142,11 @@ invoicesRouter.post(
 
       return {
         id: invoiceId,
+        invoiceNumber,
         clientId: payload.clientId,
         issueDate: isoIssueDate,
         dueDate: isoDueDate,
+        cashReceivedDate: isoCashReceivedDate,
         totalExCents,
         totalGstCents,
         totalIncCents: totalExCents + totalGstCents,

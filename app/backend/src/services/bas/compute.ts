@@ -1,4 +1,4 @@
-import { and, gte, lte, sql } from "drizzle-orm";
+import { and, gte, isNotNull, lte, sql } from "drizzle-orm";
 
 import type { DatabaseClient } from "../../db/client.js";
 import { db } from "../../db/client.js";
@@ -26,13 +26,22 @@ export async function computeBasSummary({ period, basis, database = db }: BasSum
   const periodStart = period.start.toISOString().slice(0, 10);
   const periodEnd = period.end.toISOString().slice(0, 10);
 
+  const salesWhere =
+    basis === "cash"
+      ? and(
+          isNotNull(invoices.cashReceivedDate),
+          gte(invoices.cashReceivedDate, periodStart),
+          lte(invoices.cashReceivedDate, periodEnd)
+        )
+      : and(gte(invoices.issueDate, periodStart), lte(invoices.issueDate, periodEnd));
+
   const [sales] = await database
     .select({
       totalEx: sql<number>`COALESCE(SUM(${invoices.totalExCents}), 0)`,
       totalGst: sql<number>`COALESCE(SUM(${invoices.totalGstCents}), 0)`
     })
     .from(invoices)
-    .where(and(gte(invoices.issueDate, periodStart), lte(invoices.issueDate, periodEnd)));
+    .where(salesWhere);
 
   const [purchases] = await database
     .select({

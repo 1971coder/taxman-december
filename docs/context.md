@@ -6,17 +6,18 @@ _Last updated: 2024-12-28_
 Offline-first tooling for AU accountants to manage company settings, client/employee masters, client-specific rate cards, invoices (with autofilled rates), expenses, and BAS prep. All data lives in a local SQLite database; no cloud dependencies or external APIs.
 
 ## 2. Current Implementation Snapshot
-We have completed Sprints 1–7 from `docs/ROADMAP.md`:
+We have completed Sprints 1–7 from `docs/ROADMAP.md` and layered on the recent BAS + invoicing refinements:
 - **Workspace:** pnpm monorepo with `app/backend`, `app/frontend`, `packages/api-types`.
 - **Shared contracts:** `packages/api-types` exports Zod schemas/types used by both apps (settings, BAS request/response, data I/O payloads, etc.).
-- **Backend:** Express + Drizzle (better-sqlite3). Routes implemented for settings, GST codes, clients, employees, client rates (with overlap guard), invoices (includes `resolveRate` and sum/gst math), expenses, BAS reports (`/api/reports/bas` wired to `generateBasPeriods` + `computeBasSummary`), and data I/O (`/api/data/export|import|backup|restore`).
+- **Backend:** Express + Drizzle (better-sqlite3). Routes implemented for settings, GST codes, clients, employees, client rates (with overlap guard), invoices (now issues sequential `invoiceNumber` values and stores an optional `cashReceivedDate` for BAS purposes), expenses, BAS reports (`/api/reports/bas` wired to `generateBasPeriods` + `computeBasSummary`), and data I/O (`/api/data/export|import|backup|restore`).
 - **Frontend:** Vite + React + Tailwind + shadcn-style primitives. TanStack Query + RHF/Zod used across settings, GST codes, clients, employees, client rates, invoices, expenses pages, BAS worksheet, and the Data I/O console (CSV + backup actions).
+- **Automated UI tests:** Vitest + Testing Library suites now cover every screen (dashboard, settings, clients, employees, invoices, expenses, reports, data I/O) via `renderWithProviders` + mocked `fetch`.
 - **Validation:** All APIs parse payloads via shared Zod schemas before touching the DB.
 - **Tooling:** Strict TS (`NodeNext`/`Bundler` resolution where appropriate), ESLint flat config, Prettier, and Vitest suites (BAS reports + data I/O routes covered via supertest fixtures). `pnpm dev` runs both apps; `pnpm db:push` syncs Drizzle schema to SQLite.
 
 Remaining roadmap work:
-1. **Hardening/Test Coverage:** Extend Vitest beyond BAS/data routes (rate resolver, invoices, expenses), add QA scenarios, and keep regression tests green before packaging.
-2. **Polish/Nice-to-haves:** CSV detail exports beyond summaries, richer exception handling, BAS PDF/email integrations, and automated backup scheduling.
+1. **Hardening/Test Coverage:** Shore up backend coverage for rate resolver / expenses APIs (frontend suites exist, backend still needs parity) and address lingering `act()` warnings from React Router future flags once v7 lands.
+2. **Polish/Nice-to-haves:** CSV detail exports beyond summaries, richer exception handling, BAS PDF/email integrations, automated backup scheduling, and optional receipts workflows that complement the new `cashReceivedDate`.
 
 ## 3. Architecture & Layout
 ```

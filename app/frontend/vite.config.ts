@@ -9,6 +9,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src")
     }
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: path.resolve(__dirname, "vitest.setup.ts"),
+    globals: true,
+    threads: false
+  },
   server: {
     port: 5173,
     proxy: {

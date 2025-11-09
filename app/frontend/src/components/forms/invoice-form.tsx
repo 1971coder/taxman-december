@@ -34,6 +34,7 @@ const formSchema = z.object({
   clientId: z.string().min(1),
   issueDate: z.string().min(1),
   dueDate: z.string().min(1).optional(),
+  cashReceivedDate: z.string().optional(),
   reference: z.string().optional(),
   notes: z.string().optional(),
   lines: z.array(invoiceLineSchema).min(1)
@@ -65,6 +66,7 @@ export function InvoiceForm() {
       clientId: "",
       issueDate: today,
       dueDate: today,
+      cashReceivedDate: "",
       reference: "",
       notes: "",
       lines: [{ ...defaultLine }]
@@ -147,6 +149,7 @@ export function InvoiceForm() {
         body: {
           ...values,
           dueDate: values.dueDate ?? values.issueDate,
+          cashReceivedDate: values.cashReceivedDate ? values.cashReceivedDate : undefined,
           lines: values.lines.map((line) => ({
             ...line,
             quantity: Number(line.quantity),
@@ -161,6 +164,7 @@ export function InvoiceForm() {
         clientId: "",
         issueDate: today,
         dueDate: today,
+        cashReceivedDate: "",
         reference: "",
         notes: "",
         lines: [{ ...defaultLine }]
@@ -198,7 +202,7 @@ export function InvoiceForm() {
         </CardDescription>
       </CardHeader>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="client">Client</Label>
             <Select
@@ -228,6 +232,11 @@ export function InvoiceForm() {
           <div className="space-y-2">
             <Label htmlFor="dueDate">Due date</Label>
             <Input id="dueDate" type="date" {...form.register("dueDate")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cashReceivedDate">Cash received date</Label>
+            <Input id="cashReceivedDate" type="date" {...form.register("cashReceivedDate")} />
+            <p className="text-xs text-slate-500">Needed for cash-basis BAS totals.</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">

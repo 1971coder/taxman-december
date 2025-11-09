@@ -65,9 +65,11 @@ export const invoiceLineSchema = z.object({
 
 export const invoiceSchema = z.object({
   id: z.string().uuid().optional(),
+  invoiceNumber: z.number().int().positive().optional(),
   clientId: z.string().uuid(),
   issueDate: z.coerce.date(),
   dueDate: z.coerce.date().optional(),
+  cashReceivedDate: z.coerce.date().optional(),
   reference: z.string().optional(),
   notes: z.string().optional(),
   lines: z.array(invoiceLineSchema).min(1)
