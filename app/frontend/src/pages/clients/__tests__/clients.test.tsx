@@ -1,11 +1,11 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { renderWithProviders, setupFetchMock } from "../../../test-utils";
 import ClientsPage from "..";
 
 describe("ClientsPage", () => {
-  it("renders client list, rate cards, and submits new clients", async () => {
+  it("renders client list, submits new clients, and updates existing ones", async () => {
     const fetchMock = setupFetchMock({
       "/api/clients": {
         GET: { body: { data: [
@@ -25,6 +25,9 @@ describe("ClientsPage", () => {
           }
         ] } },
         POST: ({ body }) => ({ body: { data: { id: "client-new", ...body } } })
+      },
+      "/api/clients/client-1": {
+        PUT: ({ body }) => ({ body: { data: { id: "client-1", ...body } } })
       },
       "/api/employees": {
         GET: { body: { data: [
@@ -52,6 +55,7 @@ describe("ClientsPage", () => {
 
     expect(await screen.findByText("Acme Pty")).toBeInTheDocument();
     expect(screen.getByText("Beta Pty")).toBeInTheDocument();
+    expect(screen.getByText("1 Example Street")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText(/Employee One/)).toBeInTheDocument();

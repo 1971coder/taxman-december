@@ -26,6 +26,7 @@ export const clientSchema = z.object({
   id: z.string().uuid().optional(),
   displayName: z.string().min(1),
   contactEmail: z.string().email().optional(),
+  address: z.string().min(1).optional(),
   defaultRateCents: z.number().int().nonnegative().optional(),
   paymentTermsDays: z.number().int().nonnegative().default(0),
   isActive: z.boolean().default(true)

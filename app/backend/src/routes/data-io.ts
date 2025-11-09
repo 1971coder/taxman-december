@@ -122,6 +122,7 @@ const exportConfig: Record<
           id: clients.id,
           displayName: clients.displayName,
           contactEmail: clients.contactEmail,
+          address: clients.address,
           defaultRateCents: clients.defaultRateCents,
           paymentTermsDays: clients.paymentTermsDays,
           isActive: clients.isActive
@@ -228,6 +229,7 @@ const importHandlers: Record<ImportEntity, ImportHandler> = {
             id: getOptionalString(normalized, ["id"]),
             displayName: getString(normalized, ["displayName", "name"]),
             contactEmail: getOptionalString(normalized, ["contactEmail", "email"]),
+            address: getOptionalString(normalized, ["address"]),
             defaultRateCents: getOptionalNumber(normalized, ["defaultRateCents"]),
             paymentTermsDays: getOptionalNumber(normalized, ["paymentTermsDays", "terms", "paymentTerms"]),
             isActive: getOptionalBoolean(normalized, ["isActive"])
@@ -239,6 +241,7 @@ const importHandlers: Record<ImportEntity, ImportHandler> = {
       const values = {
         displayName: parsed.displayName,
         contactEmail: parsed.contactEmail ?? null,
+        address: parsed.address ?? null,
         defaultRateCents: parsed.defaultRateCents ?? null,
         paymentTermsDays: parsed.paymentTermsDays ?? 0,
         isActive: parsed.isActive

@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS clients (
   id TEXT PRIMARY KEY,
   display_name TEXT NOT NULL,
   contact_email TEXT,
+  address TEXT,
   default_rate_cents INTEGER,
   payment_terms_days INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
