@@ -15,14 +15,10 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 
-const clientFormSchema = clientSchema.pick({
-  displayName: true,
-  contactEmail: true,
-  defaultRateCents: true,
-  address: true
-});
-
-type ClientFormValues = z.infer<typeof clientFormSchema>;
+type ClientFormValues = Pick<
+  ClientInput,
+  "displayName" | "contactEmail" | "defaultRateCents" | "paymentTermsDays"
+>;
 
 const CLIENTS_QUERY_KEY = ["clients"];
 
@@ -64,13 +60,20 @@ function prepareClientPayload(values: ClientFormValues): ClientFormValues {
 export default function ClientsPage() {
   const queryClient = useQueryClient();
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: createEmptyClientFormValues()
-  });
-
-  const editForm = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: createEmptyClientFormValues()
+    resolver: zodResolver(
+      clientSchema.pick({
+        displayName: true,
+        contactEmail: true,
+        defaultRateCents: true,
+        paymentTermsDays: true
+      })
+    ),
+    defaultValues: {
+      displayName: "",
+      contactEmail: "",
+      defaultRateCents: 0,
+      paymentTermsDays: 0
+    }
   });
 
   const clientsQuery = useQuery({
@@ -98,7 +101,12 @@ export default function ClientsPage() {
         return { data: [...current.data, response.data] };
       });
       toast.success("Client saved");
-      form.reset(createEmptyClientFormValues());
+      form.reset({
+        displayName: "",
+        contactEmail: "",
+        defaultRateCents: 0,
+        paymentTermsDays: 0
+      });
     },
     onError: () => toast.error("Unable to save client")
   });
@@ -147,6 +155,7 @@ export default function ClientsPage() {
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Address</th>
                 <th className="px-4 py-2 text-right">Default Rate</th>
+                <th className="px-4 py-2 text-right">Terms (days)</th>
                 <th className="px-4 py-2 text-right">Rates</th>
               </tr>
             </thead>
@@ -171,6 +180,7 @@ export default function ClientsPage() {
                   <td className="px-4 py-2 text-right">
                     {client.defaultRateCents ? `$${(client.defaultRateCents / 100).toFixed(2)}` : "—"}
                   </td>
+                  <td className="px-4 py-2 text-right">{client.paymentTermsDays ?? 0}</td>
                   <td className="px-4 py-2 text-right">
                     <button
                       type="button"
@@ -310,6 +320,15 @@ export default function ClientsPage() {
                 setValueAs: (value: string) =>
                   value === "" ? undefined : Number.parseInt(value, 10)
               })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paymentTermsDays">Payment terms (days)</Label>
+            <Input
+              id="paymentTermsDays"
+              type="number"
+              min={0}
+              {...form.register("paymentTermsDays", { valueAsNumber: true })}
             />
           </div>
           <Button type="submit" className="md:col-span-3" disabled={mutation.isPending}>

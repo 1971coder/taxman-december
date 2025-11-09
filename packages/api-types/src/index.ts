@@ -28,6 +28,7 @@ export const clientSchema = z.object({
   contactEmail: z.string().email().optional(),
   address: z.string().min(1).optional(),
   defaultRateCents: z.number().int().nonnegative().optional(),
+  paymentTermsDays: z.number().int().nonnegative().default(0),
   isActive: z.boolean().default(true)
 });
 export type ClientInput = z.infer<typeof clientSchema>;
@@ -38,6 +39,11 @@ export const employeeSchema = z.object({
   email: z.string().email().optional(),
   baseRateCents: z.number().int().nonnegative(),
   defaultUnit: unitSchema.default("hour"),
+  superContributionPercent: z
+    .number()
+    .nonnegative()
+    .max(100)
+    .default(11),
   isActive: z.boolean().default(true)
 });
 export type EmployeeInput = z.infer<typeof employeeSchema>;

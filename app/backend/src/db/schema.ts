@@ -32,6 +32,7 @@ export const clients = sqliteTable("clients", {
   contactEmail: text("contact_email"),
   address: text("address"),
   defaultRateCents: integer("default_rate_cents"),
+  paymentTermsDays: integer("payment_terms_days").notNull().default(0),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -44,6 +45,7 @@ export const employees = sqliteTable("employees", {
   email: text("email"),
   baseRateCents: integer("base_rate_cents").notNull().default(0),
   defaultUnit: text("default_unit").notNull().default("hour"),
+  superContributionPercent: real("super_contribution_percent").notNull().default(11),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

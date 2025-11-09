@@ -84,6 +84,12 @@ export function InvoiceForm() {
     queryFn: () => apiFetch<{ data: ClientInput[] }>("/clients")
   });
 
+  const clients = clientsQuery.data?.data ?? [];
+  const selectedClient = useMemo(
+    () => clients.find((client) => client.id === clientId),
+    [clients, clientId]
+  );
+
   const employeesQuery = useQuery({
     queryKey: EMPLOYEES_QUERY_KEY,
     queryFn: () => apiFetch<{ data: EmployeeInput[] }>("/employees")
@@ -119,6 +125,17 @@ export function InvoiceForm() {
       }
     });
   }, [clientId, issueDate, clientRatesQuery.data, employeesQuery.data]);
+
+  useEffect(() => {
+    if (!clientId || !issueDate) return;
+    const terms = selectedClient?.paymentTermsDays ?? 0;
+    const computedDueDate = addDays(issueDate, terms);
+    if (!computedDueDate) return;
+    const currentDueDate = form.getValues("dueDate");
+    if (currentDueDate !== computedDueDate) {
+      form.setValue("dueDate", computedDueDate, { shouldDirty: true });
+    }
+  }, [clientId, form, issueDate, selectedClient?.paymentTermsDays]);
 
   const gstLookup = useMemo(() => {
     const entries: [string, number][] = (gstCodesQuery.data?.data ?? [])
@@ -382,4 +399,14 @@ function isWithin(date: Date, start: Date, end: Date | null) {
   const startTime = start.getTime();
   const endTime = end ? end.getTime() : Number.POSITIVE_INFINITY;
   return startTime <= time && time <= endTime;
+}
+
+function addDays(date: string, days: number) {
+  if (!date) return null;
+  const base = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(base.getTime())) {
+    return null;
+  }
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
 }

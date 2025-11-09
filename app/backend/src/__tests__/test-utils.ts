@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS clients (
   contact_email TEXT,
   address TEXT,
   default_rate_cents INTEGER,
+  payment_terms_days INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS employees (
   email TEXT,
   base_rate_cents INTEGER NOT NULL DEFAULT 0,
   default_unit TEXT NOT NULL DEFAULT 'hour',
+  super_contribution_percent REAL NOT NULL DEFAULT 11,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );

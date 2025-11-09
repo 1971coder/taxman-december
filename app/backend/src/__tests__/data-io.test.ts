@@ -24,7 +24,9 @@ describe("/api/data routes", () => {
 
     expect(response.headers["content-type"]).toContain("text/csv");
     const lines = response.text.trim().split("\n");
-    expect(lines[0]).toBe("id,displayName,contactEmail,address,defaultRateCents,isActive");
+    expect(lines[0]).toBe(
+      "id,displayName,contactEmail,defaultRateCents,paymentTermsDays,isActive"
+    );
     expect(lines[1]).toContain('"Acme, ""Pty"""');
   });
 
@@ -40,13 +42,13 @@ describe("/api/data routes", () => {
             displayName: "New Client",
             contactEmail: "new@example.com",
             defaultRateCents: 15000,
-            address: "123 Test Street"
+            paymentTermsDays: 30
           },
           {
             id: EXISTING_ID,
             displayName: "Existing Co Updated",
             defaultRateCents: 18000,
-            address: "Suite 200"
+            paymentTermsDays: 14
           }
         ]
       })
@@ -114,8 +116,8 @@ function insertClient({ id, displayName }: { id: string; displayName: string }) 
     sqlite
       .prepare(
         `
-        INSERT INTO clients (id, display_name, contact_email, address, default_rate_cents, is_active)
-        VALUES (@id, @displayName, 'client@example.com', '123 Example St', 10000, 1)
+        INSERT INTO clients (id, display_name, contact_email, default_rate_cents, payment_terms_days, is_active)
+        VALUES (@id, @displayName, 'client@example.com', 10000, 0, 1)
       `
       )
       .run({ id, displayName });
