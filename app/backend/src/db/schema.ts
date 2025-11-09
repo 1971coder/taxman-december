@@ -31,6 +31,7 @@ export const clients = sqliteTable("clients", {
   displayName: text("display_name").notNull(),
   contactEmail: text("contact_email"),
   defaultRateCents: integer("default_rate_cents"),
+  paymentTermsDays: integer("payment_terms_days").notNull().default(0),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

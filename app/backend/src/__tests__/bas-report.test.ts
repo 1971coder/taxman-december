@@ -168,8 +168,8 @@ function seedClient(overrides: { id: string; displayName: string }) {
     sqlite
       .prepare(
         `
-        INSERT INTO clients (id, display_name, contact_email, default_rate_cents, is_active)
-        VALUES (@id, @displayName, @contactEmail, @defaultRateCents, @isActive)
+        INSERT INTO clients (id, display_name, contact_email, default_rate_cents, payment_terms_days, is_active)
+        VALUES (@id, @displayName, @contactEmail, @defaultRateCents, 0, @isActive)
       `
       )
       .run({

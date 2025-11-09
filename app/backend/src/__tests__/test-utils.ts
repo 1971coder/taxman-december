@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS clients (
   display_name TEXT NOT NULL,
   contact_email TEXT,
   default_rate_cents INTEGER,
+  payment_terms_days INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
