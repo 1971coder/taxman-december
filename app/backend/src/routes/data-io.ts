@@ -122,7 +122,15 @@ const exportConfig: Record<
         .orderBy(asc(clients.displayName))
   },
   employees: {
-    headers: ["id", "fullName", "email", "baseRateCents", "defaultUnit", "isActive"],
+    headers: [
+      "id",
+      "fullName",
+      "email",
+      "baseRateCents",
+      "defaultUnit",
+      "superContributionPercent",
+      "isActive"
+    ],
     fetch: async () =>
       db
         .select({
@@ -131,6 +139,7 @@ const exportConfig: Record<
           email: employees.email,
           baseRateCents: employees.baseRateCents,
           defaultUnit: employees.defaultUnit,
+          superContributionPercent: employees.superContributionPercent,
           isActive: employees.isActive
         })
         .from(employees)
@@ -254,6 +263,7 @@ const importHandlers: Record<ImportEntity, ImportHandler> = {
             email: getOptionalString(normalized, ["email"]),
             baseRateCents: getNumber(normalized, ["baseRateCents", "rateCents"], index),
             defaultUnit: getOptionalString(normalized, ["defaultUnit"]),
+            superContributionPercent: getOptionalNumber(normalized, ["superContributionPercent", "superPercent"]),
             isActive: getOptionalBoolean(normalized, ["isActive"])
           }),
         index
@@ -265,6 +275,7 @@ const importHandlers: Record<ImportEntity, ImportHandler> = {
         email: parsed.email ?? null,
         baseRateCents: parsed.baseRateCents,
         defaultUnit: parsed.defaultUnit,
+        superContributionPercent: parsed.superContributionPercent,
         isActive: parsed.isActive
       };
 
