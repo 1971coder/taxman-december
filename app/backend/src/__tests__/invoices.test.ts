@@ -75,8 +75,8 @@ function seedClient() {
     sqlite
       .prepare(
         `
-        INSERT INTO clients (id, display_name, contact_email, default_rate_cents, is_active)
-        VALUES (@id, 'Client A', 'client@example.com', 0, 1)
+        INSERT INTO clients (id, display_name, contact_email, address, default_rate_cents, is_active)
+        VALUES (@id, 'Client A', 'client@example.com', '123 Example St', 0, 1)
       `
       )
       .run({ id: CLIENT_ID });

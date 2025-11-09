@@ -108,13 +108,14 @@ const exportConfig: Record<
   }
 > = {
   clients: {
-    headers: ["id", "displayName", "contactEmail", "defaultRateCents", "isActive"],
+    headers: ["id", "displayName", "contactEmail", "address", "defaultRateCents", "isActive"],
     fetch: async () =>
       db
         .select({
           id: clients.id,
           displayName: clients.displayName,
           contactEmail: clients.contactEmail,
+          address: clients.address,
           defaultRateCents: clients.defaultRateCents,
           isActive: clients.isActive
         })
@@ -211,6 +212,7 @@ const importHandlers: Record<ImportEntity, ImportHandler> = {
             id: getOptionalString(normalized, ["id"]),
             displayName: getString(normalized, ["displayName", "name"]),
             contactEmail: getOptionalString(normalized, ["contactEmail", "email"]),
+            address: getOptionalString(normalized, ["address"]),
             defaultRateCents: getOptionalNumber(normalized, ["defaultRateCents"]),
             isActive: getOptionalBoolean(normalized, ["isActive"])
           }),
@@ -221,6 +223,7 @@ const importHandlers: Record<ImportEntity, ImportHandler> = {
       const values = {
         displayName: parsed.displayName,
         contactEmail: parsed.contactEmail ?? null,
+        address: parsed.address ?? null,
         defaultRateCents: parsed.defaultRateCents ?? null,
         isActive: parsed.isActive
       };

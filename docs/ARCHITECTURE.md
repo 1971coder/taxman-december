@@ -63,7 +63,7 @@ package.json (workspace), README.md
 
 ## Data Model (core fields)
 - **company_settings**: id, legal_name, abn, gst_basis, bas_frequency, fy_start_month, created_at
-- **clients**: id, display_name, contact_email, default_rate_cents, is_active
+- **clients**: id, display_name, contact_email, address, default_rate_cents, is_active
 - **employees**: id, full_name, email, base_rate_cents, default_unit, is_active
 - **client_rates**: id, client_id, employee_id, rate_cents, unit, effective_from, effective_to
 - **invoices / invoice_items**, **receipts / receipt_allocations**
@@ -71,7 +71,7 @@ package.json (workspace), README.md
 
 ## API Surface (clean & tiny)
 - `GET/PUT /api/settings`
-- `GET/POST /api/clients`
+- `GET/POST/PUT /api/clients`
 - `GET/POST /api/employees`
 - `GET /api/invoices?status=&clientId=` · `POST /api/invoices` · `PUT /api/invoices/:id`
 - `GET/POST /api/expenses`

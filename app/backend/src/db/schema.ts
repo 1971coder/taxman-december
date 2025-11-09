@@ -30,6 +30,7 @@ export const clients = sqliteTable("clients", {
   id: text("id").primaryKey(),
   displayName: text("display_name").notNull(),
   contactEmail: text("contact_email"),
+  address: text("address"),
   defaultRateCents: integer("default_rate_cents"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
