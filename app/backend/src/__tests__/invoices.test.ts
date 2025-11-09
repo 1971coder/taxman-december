@@ -119,8 +119,8 @@ function seedEmployee() {
     sqlite
       .prepare(
         `
-        INSERT INTO employees (id, full_name, email, base_rate_cents, default_unit, is_active)
-        VALUES (@id, 'Employee A', 'emp@example.com', 10000, 'hour', 1)
+        INSERT INTO employees (id, full_name, email, base_rate_cents, default_unit, super_contribution_percent, is_active)
+        VALUES (@id, 'Employee A', 'emp@example.com', 10000, 'hour', 11, 1)
       `
       )
       .run({ id: EMPLOYEE_ID });

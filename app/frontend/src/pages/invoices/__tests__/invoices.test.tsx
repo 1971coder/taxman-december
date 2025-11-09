@@ -14,7 +14,14 @@ describe("InvoicesPage", () => {
       },
       "/api/employees": {
         GET: { body: { data: [
-          { id: "emp-1", fullName: "Consultant", email: "c@example.com", baseRateCents: 9000, defaultUnit: "hour" }
+          {
+            id: "emp-1",
+            fullName: "Consultant",
+            email: "c@example.com",
+            baseRateCents: 9000,
+            defaultUnit: "hour",
+            superContributionPercent: 11
+          }
         ] } }
       },
       "/api/gst-codes": {

@@ -28,7 +28,14 @@ describe("ClientsPage", () => {
       },
       "/api/employees": {
         GET: { body: { data: [
-          { id: "emp-1", fullName: "Employee One", email: "one@example.com", baseRateCents: 10000, defaultUnit: "hour" }
+          {
+            id: "emp-1",
+            fullName: "Employee One",
+            email: "one@example.com",
+            baseRateCents: 10000,
+            defaultUnit: "hour",
+            superContributionPercent: 11
+          }
         ] } }
       },
       "/api/client-rates?clientId=client-1": {

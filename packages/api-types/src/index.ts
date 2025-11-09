@@ -38,6 +38,11 @@ export const employeeSchema = z.object({
   email: z.string().email().optional(),
   baseRateCents: z.number().int().nonnegative(),
   defaultUnit: unitSchema.default("hour"),
+  superContributionPercent: z
+    .number()
+    .nonnegative()
+    .max(100)
+    .default(11),
   isActive: z.boolean().default(true)
 });
 export type EmployeeInput = z.infer<typeof employeeSchema>;
