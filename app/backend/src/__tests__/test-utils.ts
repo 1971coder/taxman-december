@@ -85,6 +85,23 @@ CREATE TABLE IF NOT EXISTS invoice_items (
   FOREIGN KEY (invoice_id) REFERENCES invoices(id)
 );
 
+CREATE TABLE IF NOT EXISTS receipts (
+  id TEXT PRIMARY KEY,
+  invoice_id TEXT NOT NULL,
+  received_date TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS receipt_allocations (
+  id TEXT PRIMARY KEY,
+  receipt_id TEXT NOT NULL,
+  invoice_id TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  FOREIGN KEY (receipt_id) REFERENCES receipts(id),
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+);
+
 CREATE TABLE IF NOT EXISTS expenses (
   id TEXT PRIMARY KEY,
   supplier_name TEXT NOT NULL,
@@ -117,6 +134,8 @@ export async function setupTestApp(): Promise<TestContext> {
 export function resetDatabase(dbPath: string) {
   withDatabase(dbPath, (sqlite) => {
     sqlite.exec(`
+      DELETE FROM receipt_allocations;
+      DELETE FROM receipts;
       DELETE FROM invoice_items;
       DELETE FROM invoices;
       DELETE FROM expenses;

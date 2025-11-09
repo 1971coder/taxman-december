@@ -11,7 +11,7 @@ const CLIENT_ID = "11111111-1111-4111-8111-111111111119";
 const EMPLOYEE_ID = "22222222-2222-4222-8222-222222222229";
 const GST_CODE_ID = "00000000-0000-4000-8000-000000000001";
 
-describe("POST /api/invoices", () => {
+describe("Invoices API", () => {
   beforeAll(async () => {
     ({ app, dbPath } = await setupTestApp());
   });
@@ -99,7 +99,174 @@ describe("POST /api/invoices", () => {
 
     expect(storedInvoice?.dueDate).toBe("2024-08-15");
   });
+
+  it("returns invoice details with line items", async () => {
+    const payload = buildInvoicePayload({
+      cashReceivedDate: "2024-07-20",
+      reference: "INV-0001",
+      notes: "Thanks!",
+      lines: [
+        {
+          employeeId: EMPLOYEE_ID,
+          description: "Consulting block",
+          quantity: 2,
+          unit: "day",
+          rate: 150,
+          gstCodeId: GST_CODE_ID,
+          overrideRate: true
+        }
+      ]
+    });
+
+    const createResponse = await request(app).post("/api/invoices").send(payload).expect(201);
+    const invoiceId = createResponse.body.data.id;
+
+    const detailResponse = await request(app).get(`/api/invoices/${invoiceId}`).expect(200);
+
+    expect(detailResponse.body.data.reference).toBe("INV-0001");
+    expect(detailResponse.body.data.lines).toHaveLength(1);
+    expect(detailResponse.body.data.lines[0]).toMatchObject({
+      employeeId: EMPLOYEE_ID,
+      description: "Consulting block",
+      quantity: 2,
+      unit: "day",
+      rate: 150,
+      overrideRate: true
+    });
+  });
+
+  it("updates invoices and replaces existing line items", async () => {
+    const createResponse = await request(app)
+      .post("/api/invoices")
+      .send(
+        buildInvoicePayload({
+          cashReceivedDate: "2024-07-05",
+          lines: [
+            {
+              employeeId: EMPLOYEE_ID,
+              description: "Initial",
+              quantity: 1,
+              unit: "hour",
+              rate: 120,
+              gstCodeId: GST_CODE_ID,
+              overrideRate: true
+            }
+          ]
+        })
+      )
+      .expect(201);
+
+    const invoiceId = createResponse.body.data.id;
+
+    const updateResponse = await request(app)
+      .put(`/api/invoices/${invoiceId}`)
+      .send(
+        buildInvoicePayload({
+          issueDate: "2024-08-01",
+          dueDate: "2024-08-10",
+          cashReceivedDate: "2024-08-12",
+          reference: "INV-EDIT",
+          notes: "Edited invoice",
+          lines: [
+            {
+              employeeId: EMPLOYEE_ID,
+              description: "Updated description",
+              quantity: 2,
+              unit: "day",
+              rate: 300,
+              gstCodeId: GST_CODE_ID,
+              overrideRate: true
+            }
+          ]
+        })
+      )
+      .expect(200);
+
+    expect(updateResponse.body.data.issueDate).toBe("2024-08-01");
+    expect(updateResponse.body.data.cashReceivedDate).toBe("2024-08-12");
+    expect(updateResponse.body.data.reference).toBe("INV-EDIT");
+    expect(updateResponse.body.data.totalIncCents).toBe(66000);
+
+    const persisted = withDatabase(dbPath, (sqlite) => ({
+      invoice: sqlite
+        .prepare("SELECT issue_date AS issueDate, total_inc_cents AS totalIncCents FROM invoices WHERE id = @id")
+        .get({ id: invoiceId }),
+      lineCount: sqlite.prepare("SELECT COUNT(*) AS count FROM invoice_items WHERE invoice_id = @id").get({ id: invoiceId })
+    }));
+
+    expect(persisted.invoice.totalIncCents).toBe(66000);
+    expect(persisted.lineCount.count).toBe(1);
+  });
+
+  it("deletes invoices and cascades to line items", async () => {
+    const createResponse = await request(app)
+      .post("/api/invoices")
+      .send(
+        buildInvoicePayload({
+          lines: [
+            {
+              employeeId: EMPLOYEE_ID,
+              description: "To delete",
+              quantity: 1,
+              unit: "hour",
+              rate: 110,
+              gstCodeId: GST_CODE_ID,
+              overrideRate: true
+            }
+          ]
+        })
+      )
+      .expect(201);
+
+    const invoiceId = createResponse.body.data.id;
+
+    await request(app).delete(`/api/invoices/${invoiceId}`).expect(204);
+
+    const counts = withDatabase(dbPath, (sqlite) => ({
+      invoices: sqlite.prepare("SELECT COUNT(*) AS count FROM invoices").get(),
+      items: sqlite.prepare("SELECT COUNT(*) AS count FROM invoice_items").get()
+    }));
+
+    expect(counts.invoices.count).toBe(0);
+    expect(counts.items.count).toBe(0);
+  });
 });
+
+function buildInvoicePayload({
+  clientId = CLIENT_ID,
+  issueDate = "2024-07-01",
+  dueDate = "2024-07-08",
+  cashReceivedDate,
+  reference,
+  notes,
+  lines
+}: {
+  clientId?: string;
+  issueDate?: string;
+  dueDate?: string;
+  cashReceivedDate?: string;
+  reference?: string;
+  notes?: string;
+  lines: Array<{
+    employeeId: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    rate: number;
+    gstCodeId: string;
+    overrideRate: boolean;
+  }>;
+}) {
+  return {
+    clientId,
+    issueDate,
+    dueDate,
+    cashReceivedDate,
+    reference,
+    notes,
+    lines
+  };
+}
 
 function seedClient() {
   withDatabase(dbPath, (sqlite) => {

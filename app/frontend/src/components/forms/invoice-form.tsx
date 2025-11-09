@@ -7,7 +7,7 @@ import type {
   GstCodeInput,
   InvoiceInput
 } from "@taxman/api-types";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -56,13 +56,49 @@ const CLIENTS_QUERY_KEY = ["clients"];
 const EMPLOYEES_QUERY_KEY = ["employees"];
 const GST_CODES_QUERY_KEY = ["gstCodes"];
 
-export function InvoiceForm() {
-  const queryClient = useQueryClient();
-  const today = new Date().toISOString().slice(0, 10);
+export interface InvoiceDetail {
+  id: string;
+  invoiceNumber: number;
+  clientId: string;
+  issueDate: string;
+  dueDate?: string | null;
+  cashReceivedDate?: string | null;
+  reference?: string | null;
+  notes?: string | null;
+  status: string;
+  totalExCents?: number;
+  totalGstCents?: number;
+  totalIncCents?: number;
+  lines: Array<{
+    id: string;
+    employeeId: string;
+    description: string;
+    quantity: number;
+    unit: "hour" | "day" | "item";
+    rate: number;
+    gstCodeId: string;
+    overrideRate?: boolean;
+  }>;
+}
 
-  const form = useForm<InvoiceFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+interface InvoiceFormProps {
+  editingInvoice?: InvoiceDetail | null;
+  onEditCancel?: () => void;
+  onEditComplete?: () => void;
+}
+
+type MutationInput = {
+  mode: "create" | "edit";
+  values: InvoiceFormValues;
+  invoiceId?: string;
+};
+
+export function InvoiceForm({ editingInvoice = null, onEditCancel, onEditComplete }: InvoiceFormProps) {
+  const queryClient = useQueryClient();
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const buildDefaultValues = useCallback(
+    (): InvoiceFormValues => ({
       clientId: "",
       issueDate: today,
       dueDate: today,
@@ -70,8 +106,21 @@ export function InvoiceForm() {
       reference: "",
       notes: "",
       lines: [{ ...defaultLine }]
-    }
+    }),
+    [today]
+  );
+
+  const form = useForm<InvoiceFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: buildDefaultValues()
   });
+
+  const resetToDefaults = useCallback(() => {
+    form.reset(buildDefaultValues());
+  }, [form, buildDefaultValues]);
+
+  const previousEditingId = useRef<string | null>(null);
+  const isEditing = Boolean(editingInvoice);
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "lines" });
 
@@ -107,6 +156,33 @@ export function InvoiceForm() {
   });
 
   useEffect(() => {
+    if (editingInvoice) {
+      previousEditingId.current = editingInvoice.id;
+      const sourceLines = editingInvoice.lines && editingInvoice.lines.length > 0 ? editingInvoice.lines : [{ ...defaultLine }];
+      form.reset({
+        clientId: editingInvoice.clientId,
+        issueDate: editingInvoice.issueDate,
+        dueDate: editingInvoice.dueDate ?? editingInvoice.issueDate,
+        cashReceivedDate: editingInvoice.cashReceivedDate ?? "",
+        reference: editingInvoice.reference ?? "",
+        notes: editingInvoice.notes ?? "",
+        lines: sourceLines.map((line) => ({
+          employeeId: line.employeeId ?? "",
+          description: line.description ?? "",
+          quantity: Number(line.quantity ?? 0),
+          unit: line.unit ?? "hour",
+          rate: Number(line.rate ?? 0),
+          gstCodeId: line.gstCodeId ?? "",
+          overrideRate: true
+        }))
+      });
+    } else if (previousEditingId.current) {
+      previousEditingId.current = null;
+      resetToDefaults();
+    }
+  }, [editingInvoice, form, resetToDefaults]);
+
+  useEffect(() => {
     // when issue date changes, refresh line rates (non overridden)
     if (!clientId) return;
     lines.forEach((line, index) => {
@@ -124,7 +200,7 @@ export function InvoiceForm() {
         }
       }
     });
-  }, [clientId, issueDate, clientRatesQuery.data, employeesQuery.data]);
+  }, [clientId, issueDate, clientRatesQuery.data, employeesQuery.data, form]);
 
   useEffect(() => {
     if (!clientId || !issueDate) return;
@@ -160,38 +236,59 @@ export function InvoiceForm() {
   }, [lines, gstLookup]);
 
   const mutation = useMutation({
-    mutationFn: (values: InvoiceFormValues) =>
-      apiFetch<{ data: InvoiceInput }>("/invoices", {
-        method: "POST",
-        body: {
-          ...values,
-          dueDate: values.dueDate ?? values.issueDate,
-          cashReceivedDate: values.cashReceivedDate ? values.cashReceivedDate : undefined,
-          lines: values.lines.map((line) => ({
-            ...line,
-            quantity: Number(line.quantity),
-            rate: Number(line.rate)
-          }))
+    mutationFn: async ({ mode, values, invoiceId }: MutationInput) => {
+      const payload = {
+        ...values,
+        dueDate: values.dueDate ?? values.issueDate,
+        cashReceivedDate: values.cashReceivedDate ? values.cashReceivedDate : undefined,
+        lines: values.lines.map((line) => ({
+          ...line,
+          quantity: Number(line.quantity),
+          rate: Number(line.rate)
+        }))
+      };
+
+      if (mode === "edit") {
+        if (!invoiceId) {
+          throw new Error("Invoice id is required to edit an invoice");
         }
-      }),
-    onSuccess: () => {
-      toast.success("Invoice saved");
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      form.reset({
-        clientId: "",
-        issueDate: today,
-        dueDate: today,
-        cashReceivedDate: "",
-        reference: "",
-        notes: "",
-        lines: [{ ...defaultLine }]
+        return apiFetch<{ data: InvoiceInput }>(`/invoices/${invoiceId}`, {
+          method: "PUT",
+          body: payload
+        });
+      }
+
+      return apiFetch<{ data: InvoiceInput }>("/invoices", {
+        method: "POST",
+        body: payload
       });
+    },
+    onSuccess: (_response, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success(variables.mode === "edit" ? "Invoice updated" : "Invoice saved");
+      if (variables.mode === "create") {
+        resetToDefaults();
+      } else if (onEditComplete) {
+        onEditComplete();
+      } else {
+        resetToDefaults();
+      }
     },
     onError: (error: unknown) => {
       const message = error instanceof Error ? error.message : "Unable to save invoice";
       toast.error(message);
     }
   });
+
+  const submitLabel = mutation.isPending ? (isEditing ? "Updating..." : "Saving...") : isEditing ? "Update Invoice" : "Save Draft";
+
+  const handleCancel = () => {
+    if (onEditCancel) {
+      onEditCancel();
+    } else {
+      resetToDefaults();
+    }
+  };
 
   const onEmployeeChange = (index: number, employeeId: string) => {
     form.setValue(`lines.${index}.employeeId`, employeeId, { shouldDirty: true });
@@ -207,16 +304,29 @@ export function InvoiceForm() {
   };
 
   const onSubmit = (values: InvoiceFormValues) => {
-    mutation.mutate(values);
+    mutation.mutate({
+      mode: editingInvoice ? "edit" : "create",
+      values,
+      invoiceId: editingInvoice?.id
+    });
   };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>New Invoice</CardTitle>
-        <CardDescription>
-          Client selection will cache rate cards. Employee rows auto-fill rates; chip appears when user overrides.
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <CardTitle>{isEditing ? `Edit Invoice #${editingInvoice?.invoiceNumber ?? ""}` : "New Invoice"}</CardTitle>
+          <CardDescription>
+            {isEditing
+              ? "Update invoice details or lines; totals are recalculated when you save."
+              : "Client selection will cache rate cards. Employee rows auto-fill rates; chip appears when user overrides."}
+          </CardDescription>
+        </div>
+        {isEditing && (
+          <Button type="button" variant="ghost" onClick={handleCancel}>
+            Cancel editing
+          </Button>
+        )}
       </CardHeader>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid gap-4 md:grid-cols-5">
@@ -362,7 +472,7 @@ export function InvoiceForm() {
         </div>
 
         <Button type="submit" disabled={totals.unresolvedRate || mutation.isPending}>
-          {mutation.isPending ? "Saving..." : "Save Draft"}
+          {submitLabel}
         </Button>
       </form>
     </Card>
